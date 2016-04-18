@@ -54,11 +54,16 @@ var aqiSourceData={
  	nowGraTime:"day"
  }
 
+ var gratime=document.getElementById("form-gra-time");
+ var gratimes=document.getElementsByName("gra-time");
+ var city=document.getElementById("city-select");
+
 /*
 	渲染图表
 */
 
 function renderChart(){
+
 
 }
 
