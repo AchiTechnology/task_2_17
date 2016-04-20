@@ -10,6 +10,18 @@ var aqiSourceData={
 };
 */
 
+//跨浏览器事件绑定
+function addEventHandler(ele, event, hanlder) {
+    if (ele.addEventListener) {
+        ele.addEventListener(event, hanlder, false);
+    } else if (ele.attachEvent) {
+        ele.attachEvent("on"+event, hanlder);
+    } else  {
+        ele["on" + event] = hanlder;
+    }
+}
+
+
 //以下两个函数用于随机模拟生成测试数据
 function getDateStr(dat){
 	var y= dat.getFullYear();
@@ -50,23 +62,27 @@ var aqiSourceData={
 
  //记录当前页面的表单选项
  var pageState={
- 	nowSelectCity:-1;
+ 	nowSelectCity:"北京",
  	nowGraTime:"day"
  }
 
  var gratime=document.getElementById("form-gra-time");
  var gratimes=document.getElementsByName("gra-time");
  var city=document.getElementById("city-select");
+ var aqiChartWrap = document.getElementsByClassName('aqi-chart-wrap')[0];
 
 /*
 	渲染图表
 */
 
-function renderChart(){
-
-
+function renderChart() {	
+	var color = '',text = '';
+	for (var item in charData) {
+		color = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16);
+    text += '<div title="'+item+":"+charData[item]+'" style="height:'+charData[item]+'px; background-color:'+color+'"></div>';
 }
-
+  aqiChartWrap.innerHTML = text;
+}
 
 /*
 	日、周、月的radio事件点击时的处理函数
@@ -74,8 +90,15 @@ function renderChart(){
 
 function graTimeChange(){
 	//确定是否选项发生变化
+	if(pageState.nowGraTime==this.value){
+		return;
+	}else{
+		pageState.nowGraTime=this.value;
+	}
 	//设置对应数据
+	initAqiCharData();
 	//调用图表渲染函数
+	renderChart();
 }
 
 /**
@@ -85,9 +108,15 @@ function graTimeChange(){
 
 function ctitySelectChange(){
 	//确定是否选项发生变化
+	if(pageState.nowGraTime=this.value){
+		return;
+	}else{
+		pageState.nowGraTime=this.value;
+	}
 	//设置对应数据
+	initAqiCharData();
 	//调用图标渲染函数
-	
+	renderChart();
 }
 
 /**
@@ -95,7 +124,10 @@ function ctitySelectChange(){
  */
 
 function initGraTimeForm(){
-
+	var pageRadio=gratime.getElementsByTagName('input');
+	for(var i=0;i<pageRadio.length;i++){
+		addEventHandler(pageRadio[i],'click',graTimeChange);
+	}
 }
 
 /**
@@ -104,7 +136,14 @@ function initGraTimeForm(){
 
 function initCitySelectot(){
 	//读取aqiSourceData中的城市，然后设置id为city-select 的下拉列表中选项
-	//给select设置事件，当选项发生变化时调用函数citySelectChange
+	var cityList='';
+	for(var i in aqiSourceData){
+		cityList +='<option>'+i+'</option>'
+	}
+	city.innerHTML=cityList;
+
+	//给select设置事件，当选项发生变化时调用函数citySelectChange.
+	addEventHandler(city,'change',ctitySelectChange);
 }
 
 /**
@@ -114,6 +153,52 @@ function initCitySelectot(){
 function initAqiChartData(){
 	//将原始的源数据处理成图表需要的数据格式
 	//处理好的数据存到chartData中
+	var nowCityData=aqiSourceData[pageState.nowSelectCity];
+
+	if(pageState.nowGraTime=='day'){
+		charData=nowCityData;
+	}
+	if(pageState.nowGraTime=='week'){
+		charData={};
+		var countSum=0,daySum=0,week=0;
+		for(var item in nowCityData){
+			countSum+= nowCityData[time];
+			daySum ++;
+			if((new Date(item)).getDay()==6){
+				week++;
+				charData['第'+week+'周']=Math.floor(countSum/daySum);
+				countSum=0;
+				daySum=0;
+			}
+		}
+
+		if(daySum!=0){
+			week++;
+			charData['第'+week+'周']=Math.floor(countSum/daySum);
+		}
+	}
+
+	if(pageState.nowGraTime=='month'){
+		charData={};
+		var countSum=0,daySum=0,month=0;
+		for(var item in nowCityData){
+			countSum+=nowCityData[item];
+			daySum++;
+			if((new Date(item)).getMonth()!==month){
+				month++;
+				charData['第'+month+'月']=Math.floor(countSum/daySum);
+				countSum=0;
+				daySum=0;
+			}
+		}
+
+		if(daySum!=0){
+			month++;
+			charData['第'+month+'月']=Math.floor(countSum/daySum);
+		}
+	}
+
+
 }
 
 /**
@@ -124,6 +209,7 @@ function init(){
 	initGraTimeForm();
 	initCitySelectot();
 	initAqiChartData();
+	renderChart();
 }
 
 
